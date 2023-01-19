@@ -94,8 +94,89 @@ public class BookingTests {
                         .statusCode(200)
                         .contentType(ContentType.JSON).and().time(lessThan(2000L));
 
+    }
 
+    @Test
+    public void full_Update_Booking_With_returnOk(){
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .accept("application/json")
+                .auth().preemptive().basic("admin", "password123")
+                .body(booking)
+                .when().put("booking/3")
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        Assertions.assertNotNull(response.path("firstname"));
+        Assertions.assertNotNull(response.path("lastname"));
+        Assertions.assertNotNull(response.path("totalprice"));
+        Assertions.assertNotNull(response.path("bookingdates"));
+        Assertions.assertNotNull(response.path("additionalneeds"));
 
     }
+
+    @Test
+    public void parcial_Update_Booking_With_returnOk(){
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .accept("application/json")
+                .auth().preemptive().basic("admin", "password123")
+                .body("{\n" +
+                        "    \"firstname\" : \"Juliana\",\n" +
+                        "    \"lastname\" : \"Serral\"\n" +
+                        "}")
+                .when().patch("booking/3")
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        Assertions.assertEquals("Juliana", response.path("firstname"));
+        Assertions.assertEquals("Serral", response.path("lastname"));
+
+    }
+
+    @Test
+    public void delete_Booking_With_returnOk(){
+
+        // primeiro estou criando o book para após isso conseguir deletar
+        Response response = given().config(RestAssured.config().logConfig(logConfig().enableLoggingOfRequestAndResponseIfValidationFails()))
+                .contentType(ContentType.JSON)
+                .when()
+                .body(booking)
+                .post("/booking")
+                .then()
+                .body(matchesJsonSchemaInClasspath("createBookingRequestSchema.json"))
+                .and()
+                .assertThat()
+                .statusCode(200).extract().response();
+
+        // recuperando o id do book criado anteriormente
+        String id = response.path("bookingid").toString();
+
+        given()
+                .contentType(ContentType.JSON)
+                .accept("application/json")
+                .auth().preemptive().basic("admin", "password123")
+                .when().delete("booking/"+id)
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    public void get_Health_Check_returnOk(){
+        Response response = request
+                .when()
+                .get("/ping")
+                .then()
+                .extract()
+                .response();
+
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(201, response.statusCode());
+    }
+
 
 }
